@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: supplier-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:supplier_db}
+    username: ${POSTGRES_USER:supplier}
+    password: ${POSTGRES_PASSWORD:supplier}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+server:
+  port: 8082
+
+# Custom properties are TOP LEVEL, not nested under `spring:`.
+# Nesting them is why last year's Lab 7 would not start.
+# The key is `clients`, which is what the lab pages read.
+clients:
+  product:
+    base-url: ${PRODUCT_SERVICE_URL:http://localhost:8081}

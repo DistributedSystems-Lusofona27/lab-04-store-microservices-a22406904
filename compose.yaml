@@ -1,0 +1,75 @@
+services:
+  product-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_USER: product
+      POSTGRES_PASSWORD: ${PRODUCT_DB_PASSWORD}
+    ports: ["5432:5432"]
+    volumes: ["product-data:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U product -d product_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - store-network
+
+  supplier-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: supplier_db
+      POSTGRES_USER: supplier
+      POSTGRES_PASSWORD: ${SUPPLIER_DB_PASSWORD}
+    ports: ["5433:5432"]
+    volumes: ["supplier-data:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supplier -d supplier_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - store-network
+
+  product-service:
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
+    depends_on:
+      product-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: product-db
+      POSTGRES_DB: product_db
+      POSTGRES_USER: product
+      POSTGRES_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      # Inside the network, services find each other by service name.
+      SUPPLIER_SERVICE_URL: http://supplier-service:8082
+    ports: ["8081:8081"]
+    networks:
+      - store-network
+
+  supplier-service:
+    build:
+      context: .
+      dockerfile: supplier-service/Dockerfile
+    depends_on:
+      supplier-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: supplier-db
+      POSTGRES_DB: supplier_db
+      POSTGRES_USER: supplier
+      POSTGRES_PASSWORD: ${SUPPLIER_DB_PASSWORD}
+      PRODUCT_SERVICE_URL: http://product-service:8081
+    ports: ["8082:8082"]
+    networks:
+      - store-network
+
+volumes:
+  product-data:
+  supplier-data:
+
+networks:
+  store-network:
+    external: true
